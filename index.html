@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RESET_LIST // TERMINAL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-amber: #ffb000;
+            --neon-green: #33ff33;
+            --terminal-bg: #0d0d0d;
+            --scanline-opacity: 0.15;
+            --radius-lg: 2rem;
+            --radius-md: 1.25rem;
+            --radius-sm: 0.75rem;
+        }
+
+        body { 
+            font-family: 'JetBrains Mono', monospace; 
+            background-color: var(--terminal-bg); 
+            color: var(--neon-amber);
+            overflow-x: hidden;
+            transition: background-color 0.5s ease;
+        }
+
+        /* CRT Screen Effect */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 100;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: rgba(18, 16, 16, 0.1);
+            opacity: 0;
+            z-index: 101;
+            pointer-events: none;
+            animation: flicker 0.15s infinite;
+        }
+
+        @keyframes flicker {
+            0% { opacity: 0.27861; }
+            5% { opacity: 0.34769; }
+            10% { opacity: 0.23604; }
+            100% { opacity: 0.28; }
+        }
+
+        /* Apple-like Smooth Transitions */
+        .modal-animate-in {
+            animation: appleScale 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes appleScale {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .list-item-enter {
+            animation: slideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .retro-btn {
+            background: transparent;
+            border: 2px solid var(--neon-amber);
+            color: var(--neon-amber);
+            text-transform: uppercase;
+            font-weight: bold;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            border-radius: var(--radius-sm);
+        }
+
+        .retro-btn:hover {
+            background: var(--neon-amber);
+            color: black;
+            box-shadow: 0 0 20px var(--neon-amber);
+            transform: scale(1.02);
+        }
+
+        .retro-btn:active {
+            transform: scale(0.95);
+        }
+
+        .retro-card {
+            background: rgba(255, 176, 0, 0.05);
+            border-left: 4px solid var(--neon-amber);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            border-radius: var(--radius-md);
+        }
+
+        .retro-card:hover {
+            background: rgba(255, 176, 0, 0.1);
+            transform: translateX(8px);
+            box-shadow: -10px 0 20px rgba(255, 176, 0, 0.1);
+        }
+
+        .glitch-text {
+            text-shadow: 2px 0 #ff00c1, -2px 0 #00fff9;
+            font-family: 'VT323', monospace;
+        }
+
+        .crt-modal {
+            background: #0a0a0a;
+            border: 4px double var(--neon-amber);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            border-radius: var(--radius-lg);
+        }
+
+        .timer-val {
+            font-family: 'VT323', monospace;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #000; }
+        ::-webkit-scrollbar-thumb { background: var(--neon-amber); border-radius: 4px; }
+
+        .status-ready { color: var(--neon-green); text-shadow: 0 0 8px var(--neon-green); }
+        .status-cooling { color: #ff3333; text-shadow: 0 0 8px #ff3333; }
+        
+        input {
+            background: #000 !important;
+            border: 1px solid var(--neon-amber) !important;
+            color: var(--neon-amber) !important;
+            transition: border-color 0.3s ease;
+            border-radius: var(--radius-sm) !important;
+        }
+        
+        input:focus {
+            border-color: #fff !important;
+            box-shadow: 0 0 10px rgba(255,255,255,0.2);
+        }
+
+        .profile-img-container {
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+        }
+
+        .stat-box {
+            border-radius: var(--radius-md);
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+    <div id="app" class="max-w-4xl mx-auto border-2 border-amber-900/30 p-4 md:p-8 relative rounded-[2.5rem]">
+        <header class="flex flex-col md:flex-row items-center justify-between gap-6 mb-12 border-b-2 border-amber-500/20 pb-8">
+            <div class="flex flex-col">
+                <h1 class="text-5xl md:text-6xl font-bold glitch-text tracking-widest uppercase">RESET_LIST</h1>
+                <p class="text-xs mt-2 opacity-60 tracking-[0.3em] font-bold">COOLDOWN_MANAGEMENT_INTERFACE</p>
+            </div>
+            <button onclick="toggleAddModal()" class="retro-btn px-8 py-3 text-sm tracking-tighter">
+                [+] NEW_ENTRY
+            </button>
+        </header>
+
+        <!-- Stats Grid -->
+        <div id="stats-container" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12"></div>
+
+        <div id="accounts-list" class="flex flex-col gap-6"></div>
+    </div>
+
+    <!-- Modals -->
+    <div id="add-modal" class="fixed inset-0 z-50 flex items-center justify-center p-6 hidden">
+        <div class="absolute inset-0 bg-black/90 backdrop-blur-sm transition-opacity duration-500" onclick="toggleAddModal()"></div>
+        <div class="relative w-full max-w-md bg-[#0a0a0a] border-4 border-double border-[#ffb000] p-8 shadow-[0_0_50px_rgba(255,176,0,0.2)] modal-animate-in rounded-[2rem]">
+            <div class="flex justify-between items-start mb-6">
+                <h2 id="modal-heading" class="text-2xl font-bold uppercase tracking-tighter">DATA_INPUT</h2>
+                <span class="text-[10px] bg-amber-500 text-black px-1 font-bold rounded">SECURE_CHANNEL</span>
+            </div>
+            
+            <input type="hidden" id="edit-id">
+            <div class="space-y-6">
+                <div>
+                    <label class="text-xs font-bold uppercase mb-2 block">> IDENTIFIER</label>
+                    <input id="new-name" placeholder="User Name..." class="w-full py-3 px-4 focus:outline-none">
+                </div>
+                <div>
+                    <label class="text-xs font-bold uppercase mb-2 block">> CYCLE_DURATION (H)</label>
+                    <input id="new-duration" type="number" step="0.1" value="24" class="w-full py-3 px-4 focus:outline-none">
+                </div>
+                <div class="pt-4 flex gap-4">
+                    <button onclick="toggleAddModal()" class="flex-1 py-3 text-xs font-bold border border-amber-500/50 hover:bg-amber-500/10 uppercase transition-colors rounded-xl">Abort</button>
+                    <button id="modal-save-btn" onclick="handleSaveAction()" class="flex-1 py-3 bg-amber-500 text-black font-bold uppercase text-xs transition-transform active:scale-95 rounded-xl">Execute</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retro Confirm Modal -->
+    <div id="confirm-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-6 hidden">
+        <div class="absolute inset-0 bg-black/95 transition-opacity duration-500" onclick="closeConfirmModal()"></div>
+        <div class="relative w-full max-w-sm crt-modal border-red-600 shadow-[0_0_40px_rgba(220,38,38,0.2)] p-10 overflow-hidden modal-animate-in">
+            <div class="absolute top-0 left-0 w-full h-1 bg-red-600 animate-pulse"></div>
+            
+            <div class="text-center">
+                <div id="modal-icon-bg" class="mb-6 Treehouse-icon-bg inline-block">
+                    <i id="modal-icon" data-lucide="alert-triangle" class="w-12 h-12 text-red-600"></i>
+                </div>
+                <h3 id="confirm-modal-title" class="text-2xl font-bold uppercase mb-4 tracking-tighter">WARNING</h3>
+                <p id="confirm-modal-desc" class="text-sm opacity-80 leading-relaxed mb-8 font-bold italic">Unsaved data will be lost. Proceed with command?</p>
+            </div>
+            
+            <div class="flex flex-col gap-3">
+                <button id="modal-confirm-btn" class="w-full py-4 bg-red-600 text-black font-bold uppercase tracking-widest hover:bg-red-500 transition-all active:scale-95 rounded-xl">Proceed</button>
+                <button onclick="closeConfirmModal()" class="w-full py-3 border border-red-600/50 text-red-600 font-bold uppercase text-xs tracking-widest hover:bg-red-600/10 transition-colors rounded-xl">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_KEY = 'retro-reset-v1';
+        let accounts = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+        let filterStatus = 'all';
+
+        function saveToStorage() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(accounts));
+            renderList();
+        }
+
+        function setFilter(filter) {
+            filterStatus = (filterStatus === filter) ? 'all' : filter;
+            renderList();
+        }
+
+        function toggleAddModal(editMode = false, accountId = null) {
+            const modal = document.getElementById('add-modal');
+            const heading = document.getElementById('modal-heading');
+            const saveBtn = document.getElementById('modal-save-btn');
+            const editIdInput = document.getElementById('edit-id');
+            const nameInput = document.getElementById('new-name');
+            const durationInput = document.getElementById('new-duration');
+
+            if (editMode && accountId) {
+                const acc = accounts.find(a => a.id === accountId);
+                if (acc) {
+                    heading.innerText = "EDIT_ENTITY";
+                    saveBtn.innerText = "UPDATE_COMMAND";
+                    editIdInput.value = accountId;
+                    nameInput.value = acc.name;
+                    durationInput.value = acc.durationMs / (60 * 60 * 1000);
+                }
+            } else {
+                heading.innerText = "ADD_ENTITY";
+                saveBtn.innerText = "EXECUTE_CREATE";
+                editIdInput.value = "";
+                nameInput.value = "";
+                durationInput.value = "24";
+            }
+
+            modal.classList.toggle('hidden');
+        }
+
+        function handleSaveAction() {
+            const editId = document.getElementById('edit-id').value;
+            if (editId) {
+                openConfirmModal('update', editId);
+            } else {
+                saveNewAccount();
+            }
+        }
+
+        function saveNewAccount() {
+            const name = document.getElementById('new-name').value;
+            const duration = document.getElementById('new-duration').value || 24;
+            const editId = document.getElementById('edit-id').value;
+            if (!name) return;
+
+            const newDurationMs = parseFloat(duration) * 60 * 60 * 1000;
+
+            if (editId) {
+                accounts = accounts.map(acc => {
+                    if (acc.id === editId) {
+                        let newResetAt = acc.resetAt;
+                        if (acc.resetAt && acc.resetAt > Date.now()) {
+                            const startTime = acc.resetAt - acc.durationMs;
+                            newResetAt = startTime + newDurationMs;
+                        }
+                        return { ...acc, name, durationMs: newDurationMs, resetAt: newResetAt };
+                    }
+                    return acc;
+                });
+            } else {
+                accounts.unshift({
+                    id: 'UID_' + Math.random().toString(36).substr(2, 9).toUpperCase(),
+                    name: name,
+                    durationMs: newDurationMs,
+                    resetAt: null,
+                    profileImage: null
+                });
+            }
+            toggleAddModal();
+            saveToStorage();
+        }
+
+        function handleImageUpload(id, event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    accounts = accounts.map(acc => acc.id === id ? { ...acc, profileImage: e.target.result } : acc);
+                    saveToStorage();
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function openConfirmModal(type, id) {
+            const modal = document.getElementById('confirm-modal');
+            const btn = document.getElementById('modal-confirm-btn');
+            const title = document.getElementById('confirm-modal-title');
+            const desc = document.getElementById('confirm-modal-desc');
+            
+            modal.querySelector('.crt-modal').className = "relative w-full max-w-sm crt-modal p-10 overflow-hidden modal-animate-in " + 
+                (type === 'delete' ? 'border-red-600 shadow-[0_0_40px_rgba(220,38,38,0.2)]' : 'border-amber-600 shadow-[0_0_40px_rgba(255,176,0,0.2)]');
+
+            if (type === 'reset') {
+                title.innerText = "INTERRUPT_TIMER";
+                desc.innerText = "Warning: Manual override of active cycle detected. Reset to 00:00:00?";
+                btn.className = "w-full py-4 bg-amber-500 text-black font-bold uppercase tracking-widest active:scale-95 rounded-xl";
+                btn.onclick = () => { accounts = accounts.map(acc => acc.id === id ? { ...acc, resetAt: null } : acc); saveToStorage(); closeConfirmModal(); };
+            } else if (type === 'update') {
+                title.innerText = "OVERWRITE_DATA";
+                desc.innerText = "Confirmation required for database update. Existing parameters will be purged.";
+                btn.className = "w-full py-4 bg-amber-500 text-black font-bold uppercase tracking-widest active:scale-95 rounded-xl";
+                btn.onclick = () => { saveNewAccount(); closeConfirmModal(); };
+            } else {
+                title.innerText = "PURGE_ENTITY";
+                desc.innerText = "Irreversible command. This identifier will be scrubbed from the main-frame.";
+                btn.className = "w-full py-4 bg-red-600 text-black font-bold uppercase tracking-widest active:scale-95 rounded-xl";
+                btn.onclick = () => { accounts = accounts.filter(acc => acc.id !== id); saveToStorage(); closeConfirmModal(); };
+            }
+            modal.classList.remove('hidden');
+        }
+
+        function closeConfirmModal() { document.getElementById('confirm-modal').classList.add('hidden'); }
+
+        function formatTime(resetAt) {
+            const now = Date.now();
+            if (!resetAt || resetAt <= now) return "00:00:00";
+            const diff = resetAt - now;
+            const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+            const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+            const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function renderList() {
+            const list = document.getElementById('accounts-list');
+            const stats = document.getElementById('stats-container');
+            const now = Date.now();
+
+            const ready = accounts.filter(a => !a.resetAt || a.resetAt <= now).length;
+            const cooling = accounts.length - ready;
+
+            stats.innerHTML = `
+                <div onclick="setFilter('all')" class="stat-box border border-amber-500/30 p-4 cursor-pointer hover:bg-amber-500/5 transition-all ${filterStatus === 'all' ? 'bg-amber-500/20 border-amber-500' : ''}">
+                    <div class="text-xs font-bold opacity-50 mb-1 tracking-widest">ALL_UNITS</div>
+                    <div class="text-2xl font-bold">${accounts.length}</div>
+                </div>
+                <div onclick="setFilter('ready')" class="stat-box border border-amber-500/30 p-4 cursor-pointer hover:bg-amber-500/5 transition-all ${filterStatus === 'ready' ? 'bg-amber-500/20 border-amber-500' : ''}">
+                    <div class="text-xs font-bold opacity-50 mb-1 tracking-widest">STATUS_READY</div>
+                    <div class="text-2xl font-bold text-green-400">${ready}</div>
+                </div>
+                <div onclick="setFilter('cooling')" class="stat-box border border-amber-500/30 p-4 cursor-pointer hover:bg-amber-500/5 transition-all ${filterStatus === 'cooling' ? 'bg-amber-500/20 border-amber-500' : ''}">
+                    <div class="text-xs font-bold opacity-50 mb-1 tracking-widest">STATUS_WAIT</div>
+                    <div class="text-2xl font-bold text-red-400">${cooling}</div>
+                </div>
+            `;
+
+            let filtered = accounts;
+            if (filterStatus === 'ready') filtered = accounts.filter(a => !a.resetAt || a.resetAt <= now);
+            if (filterStatus === 'cooling') filtered = accounts.filter(a => a.resetAt && a.resetAt > now);
+
+            list.innerHTML = filtered.map((acc, index) => {
+                const isReady = !acc.resetAt || acc.resetAt <= now;
+                return `
+                    <div class="retro-card p-6 flex flex-col md:flex-row items-center gap-6 list-item-enter" style="animation-delay: ${index * 0.05}s">
+                        <div class="flex items-center gap-4 w-full md:w-64">
+                            <label class="w-16 h-16 border-2 border-amber-500/40 relative cursor-pointer overflow-hidden bg-black shrink-0 rounded-2xl">
+                                ${acc.profileImage ? `<img src="${acc.profileImage}" class="w-full h-full object-cover profile-img">` : `<div class="w-full h-full flex items-center justify-center text-xs opacity-30">${acc.id.substring(0,4)}</div>`}
+                                <input type="file" class="hidden" accept="image/*" onchange="handleImageUpload('${acc.id}', event)">
+                            </label>
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-xl uppercase tracking-tighter truncate">${acc.name}</h3>
+                                <div class="text-[10px] font-bold opacity-40 uppercase">${acc.id}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 flex flex-col items-center">
+                            <div class="timer-val tabular-nums ${isReady ? 'status-ready' : 'status-cooling'} transition-colors duration-500" data-id="${acc.id}">
+                                ${formatTime(acc.resetAt)}
+                            </div>
+                            <div class="text-[10px] font-bold tracking-[0.4em] uppercase opacity-60">CD_${acc.durationMs/3600000}H</div>
+                        </div>
+
+                        <div class="flex items-center gap-3">
+                            ${isReady ? 
+                                `<button onclick="startTimer('${acc.id}')" class="retro-btn px-6 py-2 text-xs bg-amber-500 !text-black shadow-lg">INITIALIZE</button>` : 
+                                `<button onclick="openConfirmModal('reset', '${acc.id}')" class="retro-btn px-6 py-2 text-xs">INTERRUPT</button>`
+                            }
+                            <div class="flex border-l border-amber-500/20 pl-3 gap-2">
+                                <button onclick="toggleAddModal(true, '${acc.id}')" class="p-2 opacity-50 hover:opacity-100 hover:text-amber-400 transition-all hover:scale-110"><i data-lucide="edit"></i></button>
+                                <button onclick="openConfirmModal('delete', '${acc.id}')" class="p-2 opacity-50 hover:opacity-100 hover:text-red-500 transition-all hover:scale-110"><i data-lucide="trash"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+            lucide.createIcons();
+        }
+
+        function startTimer(id) {
+            accounts = accounts.map(acc => acc.id === id ? { ...acc, resetAt: Date.now() + acc.durationMs } : acc);
+            saveToStorage();
+        }
+
+        setInterval(() => {
+            const now = Date.now();
+            document.querySelectorAll('.timer-val').forEach(el => {
+                const id = el.getAttribute('data-id');
+                const acc = accounts.find(a => a.id === id);
+                if (acc) {
+                    el.innerText = formatTime(acc.resetAt);
+                    const isReady = !acc.resetAt || acc.resetAt <= now;
+                    const targetClass = `timer-val tabular-nums ${isReady ? 'status-ready' : 'status-cooling'}`;
+                    if (el.className !== targetClass) el.className = targetClass;
+                }
+            });
+        }, 1000);
+
+        window.onload = renderList;
+    </script>
+</body>
+</html>
